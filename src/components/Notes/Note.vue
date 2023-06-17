@@ -7,8 +7,9 @@
     >
       <div class="content">
         {{note.content}}
-        <div class="has-text-right has-text-grey-light mt-2">
-          <small>{{ characterLength }}</small>
+        <div class="columns is-mobile has-text-grey-light mt-2">
+          <small class="column">{{ dateFormatted }}</small>
+          <small class="column has-text-right">{{ characterLength }}</small>
         </div>
       </div>
     </div>
@@ -39,6 +40,7 @@
 <script setup>
 
   import { computed, reactive } from "vue"
+  import { useDateFormat } from "@vueuse/shared";
   import ModalDeleteNote from "@/components/Notes/ModalDeleteNote.vue";
   import { useStoreNotes } from "@/stores/storeNotes";
 
@@ -50,6 +52,15 @@
   })
 
   const storeNotes = useStoreNotes()
+
+  const dateFormatted = computed(() => {
+    let date = new Date(parseInt(props.note.date))
+    return new Intl.DateTimeFormat("en-US", {dateStyle: "full", timeStyle: "long" , timeZone: "America/Los_Angeles"}).format(date)
+    // let date = new Date(parseInt(props.note.date))
+    // //return date.toLocaleString("en-US", { timeZone: 'America/New_York' })
+    // //return date.toLocaleString("en-US", { timeZone: 'America/Los_Angeles' })
+    // return useDateFormat(date, "M-DD-YYYY @ hh:mm A", {locales: "en=US", timeZone: 'America/Los_Angeles' }).value
+  })
 
   const characterLength = computed(() => {
     let length = props.note.content.length
