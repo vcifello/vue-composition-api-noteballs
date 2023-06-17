@@ -5,9 +5,12 @@ import { collection, onSnapshot,
   query, orderBy
 } from "firebase/firestore"
 import { db } from "@/js/firebase"
+import { useStoreAuth } from "@/stores/storeAuth"
 
-const notesCollectionRef = collection(db, "notes")
-const notesCollectionQuery = query(notesCollectionRef, orderBy("date", "desc"));
+let notesCollectionRef
+let notesCollectionQuery
+
+let getNotesSnapshot = null
 
 export const useStoreNotes = defineStore('storeNotes', {
   state: () => {
@@ -26,9 +29,20 @@ export const useStoreNotes = defineStore('storeNotes', {
     }
   },
   actions: {
+    init() {
+      const storeAuth = useStoreAuth()
+
+      console.log("userId", storeAuth.user.id)
+      notesCollectionRef = collection(db, "users", storeAuth.user.id, 'notes')
+      notesCollectionQuery = query(notesCollectionRef, orderBy("date", "desc"));
+      this.getNotes()
+    },
     async getNotes() {
       this.notesLoaded = false
-      onSnapshot(notesCollectionQuery, (querySnapshot) => {
+
+      if(getNotesSnapshot) getNotesSnapshot() //unsubscribe prior listener
+
+      getNotesSnapshot = onSnapshot(notesCollectionQuery, (querySnapshot) => {
         let tempNotes = []
         querySnapshot.forEach((doc) => {
           let note = {
@@ -41,6 +55,11 @@ export const useStoreNotes = defineStore('storeNotes', {
         this.notes = tempNotes
         this.notesLoaded = true
       })
+    },
+    clearNotes() {
+      this.notes = []
+      if (getNotesSnapshot) getNotesSnapshot()
+      this.notesLoaded = false
     },
     async addNote(newNoteContent) {
       let currentDate = new Date().getTime(),
@@ -56,7 +75,8 @@ export const useStoreNotes = defineStore('storeNotes', {
     },
     async updateNote(id, content){
 
-      const docRef = doc(db, "notes", id);
+      //const docRef = doc(db, "notes", id);
+      const docRef = doc(notesCollectionRef, id);
 
       await updateDoc(docRef, {
         content: content
